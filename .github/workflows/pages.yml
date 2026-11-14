@@ -1,0 +1,56 @@
+# Publie le site vitrine à la racine et l'application dans /app/ sur GitHub Pages,
+# à chaque envoi sur la branche main.
+name: Publier sur GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Compiler le site et l'application
+        run: npm run build
+        env:
+          # Tant que les domaines preambuleo.fr et app.preambuleo.fr ne sont pas en place,
+          # le site et l'application se renvoient l'un vers l'autre par des liens relatifs.
+          VITE_APP_URL: ./app/
+          VITE_SITE_URL: ../
+      - name: Assembler les deux dossiers
+        run: |
+          mkdir -p public
+          cp -r dist/site/. public/
+          mkdir -p public/app
+          cp -r dist/app/. public/app/
+          touch public/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
