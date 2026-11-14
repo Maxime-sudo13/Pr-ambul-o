@@ -1,0 +1,27 @@
+{
+  "name": "preambuleo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:site": "vite -c vite.site.config.ts",
+    "dev:app": "vite -c vite.app.config.ts",
+    "build": "tsc --noEmit && vite build -c vite.site.config.ts && vite build -c vite.app.config.ts",
+    "cartes": "node cartes/generer.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "qrcode": "^1.5.4",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}

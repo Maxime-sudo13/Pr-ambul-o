@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# Documents commerciaux et liste de prospects : gardés hors du dépôt public
+commercial/
