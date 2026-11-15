@@ -26,6 +26,15 @@ export function useAppState() {
       /* ignore */
     }
   }, [state])
+  // La tablette et le poste du praticien peuvent être deux fenêtres du même navigateur :
+  // quand l'une enregistre, l'autre se met à jour sans rechargement.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === KEY) setState(load())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
   return [state, setState] as const
 }
 

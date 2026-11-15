@@ -24,6 +24,25 @@ export function visibleQuestions(questions: Question[], answers: Answers): Quest
   return questions.filter((q) => isVisible(q, questions, answers))
 }
 
+/** Une question sans texte, ou à choix sans aucun choix, ne doit jamais être posée au patient. */
+export function isUsable(q: Question): boolean {
+  if (!q.label.trim()) return false
+  if (q.type === 'single' || q.type === 'multi') return (q.options ?? []).some((o) => o.trim())
+  return true
+}
+
+/** Jour, mois, année saisis séparément → date ISO, ou '' si la date est incomplète, impossible ou future. */
+export function toIsoDate(day: string, month: string, year: string, today = new Date()): string {
+  const d = Number(day)
+  const m = Number(month)
+  const y = Number(year)
+  if (!/^\d{1,2}$/.test(day) || !/^\d{1,2}$/.test(month) || !/^\d{4}$/.test(year)) return ''
+  const date = new Date(y, m - 1, d)
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return ''
+  if (y < 1900 || date.getTime() > today.getTime()) return ''
+  return `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
 /** Options proposées pour une question à choix (utile pour les conditions). */
 export function choicesOf(q: Question): string[] {
   if (q.type === 'yesno') return [YES, NO]
@@ -87,11 +106,17 @@ export function buildSynthesis(session: Session): Synthesis {
   const first = byRole('firstName')
   const birth = byRole('birthDate')
 
+  const shown = visibleQuestions(questions, answers)
+  /** Un « Oui » déjà détaillé par une question de suivi n'apporte rien : on ne garde que le détail. */
+  const detailed = (q: Question) =>
+    shown.some((f) => f.condition?.questionId === q.id && f.condition.op === 'is' && f.condition.value === YES && isAnswered(answers[f.id]))
+
   const sections: SynthesisSection[] = []
-  for (const q of visibleQuestions(questions, answers)) {
+  for (const q of shown) {
     if (q.role) continue
     const a = answers[q.id]
     if (!isAnswered(a)) continue
+    if (q.type === 'yesno' && a === YES && detailed(q)) continue
     let section = sections.find((s) => s.title === q.section)
     if (!section) {
       section = { title: q.section, lines: [], negatives: [] }
@@ -139,7 +164,9 @@ export function sessionToJson(session: Session): string {
 }
 
 export function sessionToCsv(session: Session): string {
-  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
+  // Un texte libre commençant par = + - @ serait exécuté comme une formule par un tableur :
+  // on le neutralise avec une apostrophe.
+  const esc = (v: string) => `"${(/^[=+\-@\t\r]/.test(v) ? `'${v}` : v).replace(/"/g, '""')}"`
   const rows = [['Section', 'Question', 'Réponse'].map(esc).join(';')]
   for (const q of visibleQuestions(session.questions, session.answers)) {
     const a = session.answers[q.id]

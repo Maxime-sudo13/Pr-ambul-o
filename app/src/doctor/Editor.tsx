@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import ConfirmButton from '../ConfirmButton'
-import { choicesOf, newId } from '../engine'
+import { choicesOf, isUsable, newId } from '../engine'
 import { TYPE_LABELS, type Question, type QuestionType, type Questionnaire } from '../types'
 
 interface Props {
@@ -122,6 +122,7 @@ export default function Editor({ questionnaire, onChange, onReset, onChangeModel
                     </p>
                     <p className="truncate text-xs text-slate-500">
                       {TYPE_LABELS[q.type]}
+                      {!isUsable(q) && editing !== q.id && <span className="font-semibold text-red-700"> · incomplète : ne sera pas posée</span>}
                       {dependsOn && ` · seulement si « ${dependsOn.short || dependsOn.label} » ${q.condition!.op === 'is' ? '=' : '≠'} ${q.condition!.value}`}
                     </p>
                   </button>

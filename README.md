@@ -29,6 +29,22 @@ npm run dev:app
 
 `npm run build` produit `dist/site/` et `dist/app/`, à publier séparément.
 
+## Vérifier
+
+```bash
+npm test
+```
+
+lance les tests du moteur (conditions d'affichage, synthèse, dates, exports, cohérence des modèles). Ils tournent aussi avant chaque publication.
+
+## Refaire la vidéo de présentation
+
+```bash
+npm run video
+```
+
+pilote la vraie application dans un navigateur, l'enregistre et produit `video/presentation.mp4`. Copier ensuite ce fichier dans `site/public/` pour mettre à jour la vidéo du site.
+
 ## Changer la marque, le contact ou le prix
 
 Tout est dans `brand.json`, lu par le site, l'application et les cartes de visite.
@@ -50,7 +66,9 @@ régénère `cartes/cartes-impression.pdf` (85 × 55 mm, 3 mm de fond perdu) ave
 | `app/src/store.ts` | Stockage (appareil uniquement dans la démo) |
 | `app/public/` | Icônes, manifeste d'installation, fonctionnement hors connexion |
 | `site/src/` | Pages du site vitrine |
+| `app/src/engine.test.ts` | Tests automatiques du moteur |
 | `cartes/` | Cartes de visite |
+| `video/` | Scène et scénario de la vidéo de présentation |
 | `commercial/` | Documents commerciaux, gardés hors du dépôt (non versionnés) |
 | `docs/tablette-kiosque.md` | Verrouiller une tablette sur l'application |
 

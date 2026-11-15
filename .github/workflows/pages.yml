@@ -26,6 +26,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Tests automatiques
+        run: npm test
       - name: Compiler le site et l'application
         run: npm run build
         env:

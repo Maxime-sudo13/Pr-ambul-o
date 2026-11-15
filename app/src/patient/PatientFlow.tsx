@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PRODUCT_NAME } from '../config'
-import { NO, YES, display, isAnswered, newId, visibleQuestions } from '../engine'
+import { NO, YES, display, isAnswered, isUsable, newId, toIsoDate, visibleQuestions } from '../engine'
 import type { Answer, Answers, Question, Questionnaire, Session } from '../types'
 
 const RESET_SECONDS = 20
+/** Sans aucun geste pendant ce délai, on propose d'effacer le questionnaire en cours… */
+const IDLE_SECONDS = 90
+/** …et on l'efface si personne ne répond dans ce second délai. */
+const IDLE_GRACE_SECONDS = 30
 
 /**
  * Plein écran + écran toujours allumé pendant le mode patient.
@@ -53,6 +57,9 @@ export default function PatientFlow({ questionnaire, exitCode, onComplete }: Pro
   const [editing, setEditing] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
   const [typedCode, setTypedCode] = useState('')
+  const [codeError, setCodeError] = useState(false)
+  /** Secondes restantes avant effacement pour inactivité ; null tant que le patient est actif. */
+  const [idleLeft, setIdleLeft] = useState<number | null>(null)
   const [consent, setConsent] = useState(false)
   const [consentAt, setConsentAt] = useState('')
   const [answers, setAnswers] = useState<Answers>({})
@@ -66,9 +73,43 @@ export default function PatientFlow({ questionnaire, exitCode, onComplete }: Pro
     setIndex(0)
     setError('')
     setEditing(false)
+    setIdleLeft(null)
   }
 
-  const questions = questionnaire.questions
+  // Un patient qui abandonne en cours de route ne doit pas laisser ses réponses au suivant.
+  const filling = step === 'questions' || step === 'review'
+  useEffect(() => {
+    if (!filling) {
+      setIdleLeft(null)
+      return
+    }
+    let timer = 0
+    const arm = () => {
+      window.clearTimeout(timer)
+      setIdleLeft(null)
+      timer = window.setTimeout(() => setIdleLeft(IDLE_GRACE_SECONDS), IDLE_SECONDS * 1000)
+    }
+    const events = ['pointerdown', 'keydown', 'click', 'input'] as const
+    events.forEach((e) => window.addEventListener(e, arm, true))
+    arm()
+    return () => {
+      window.clearTimeout(timer)
+      events.forEach((e) => window.removeEventListener(e, arm, true))
+    }
+  }, [filling])
+  useEffect(() => {
+    if (idleLeft === null) return
+    if (idleLeft <= 0) {
+      setExitOpen(false)
+      restart()
+      return
+    }
+    const t = window.setTimeout(() => setIdleLeft((n) => (n === null ? null : n - 1)), 1000)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idleLeft])
+
+  const questions = questionnaire.questions.filter(isUsable)
   const visible = visibleQuestions(questions, answers)
   const current: Question | undefined = visible[Math.min(index, visible.length - 1)]
 
@@ -119,7 +160,10 @@ export default function PatientFlow({ questionnaire, exitCode, onComplete }: Pro
     if (typedCode === exitCode) {
       void leaveKiosk()
       window.location.hash = '#/medecin'
-    } else setTypedCode('')
+    } else {
+      setTypedCode('')
+      setCodeError(true)
+    }
   }
 
   const set = (value: Answer, advance = false) => {
@@ -152,15 +196,24 @@ export default function PatientFlow({ questionnaire, exitCode, onComplete }: Pro
               aria-label="Code du cabinet"
               className="mt-4 w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl tracking-widest outline-none focus:border-teal-700"
               value={typedCode}
-              onChange={(e) => setTypedCode(e.target.value)}
+              onChange={(e) => {
+                setTypedCode(e.target.value)
+                setCodeError(false)
+              }}
               onKeyDown={(e) => e.key === 'Enter' && tryExit()}
             />
+            {codeError && (
+              <p role="alert" className="mt-2 text-center font-medium text-red-700">
+                Code incorrect.
+              </p>
+            )}
             <div className="mt-4 flex gap-3">
               <button
                 className="flex-1 rounded-xl border border-slate-300 py-3 font-medium"
                 onClick={() => {
                   setExitOpen(false)
                   setTypedCode('')
+                  setCodeError(false)
                 }}
               >
                 Annuler
@@ -169,6 +222,22 @@ export default function PatientFlow({ questionnaire, exitCode, onComplete }: Pro
                 Valider
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {idleLeft !== null && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-slate-900/60 p-6">
+          <div role="alertdialog" aria-labelledby="idle-title" className="w-full max-w-md rounded-2xl bg-white p-8 text-center">
+            <h2 id="idle-title" className="text-2xl font-bold">
+              Êtes-vous toujours là ?
+            </h2>
+            <p className="mt-3 text-lg text-slate-600">
+              Pour protéger vos informations, vos réponses seront effacées dans {idleLeft} s.
+            </p>
+            <button className={`${primary} mt-6 w-full`} onClick={() => setIdleLeft(null)}>
+              Oui, je continue
+            </button>
           </div>
         </div>
       )}
@@ -377,15 +446,7 @@ function Field({ question: q, value, set, onEnter }: FieldProps) {
     case 'longtext':
       return <textarea autoFocus rows={4} className={input} value={text} onChange={(e) => set(e.target.value)} />
     case 'date':
-      return (
-        <input
-          type="date"
-          className={input}
-          value={text}
-          max={new Date().toISOString().slice(0, 10)}
-          onChange={(e) => set(e.target.value)}
-        />
-      )
+      return <DateField value={text} set={set} onEnter={onEnter} />
     default:
       return (
         <input
@@ -393,6 +454,9 @@ function Field({ question: q, value, set, onEnter }: FieldProps) {
           type={q.type === 'number' ? 'number' : 'text'}
           inputMode={q.type === 'number' ? 'decimal' : undefined}
           autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          autoCapitalize={q.role ? 'words' : 'sentences'}
           className={input}
           value={text}
           onChange={(e) => set(e.target.value)}
@@ -400,4 +464,77 @@ function Field({ question: q, value, set, onEnter }: FieldProps) {
         />
       )
   }
+}
+
+function DateField({ value, set, onEnter }: { value: string; set: (value: Answer) => void; onEnter: () => void }) {
+  const init = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const [day, setDay] = useState(init ? init[3] : '')
+  const [month, setMonth] = useState(init ? init[2] : '')
+  const [year, setYear] = useState(init ? init[1] : '')
+  const monthRef = useRef<HTMLInputElement>(null)
+  const yearRef = useRef<HTMLInputElement>(null)
+
+  const update = (d: string, m: string, y: string) => {
+    setDay(d)
+    setMonth(m)
+    setYear(y)
+    set(toIsoDate(d, m, y))
+  }
+  const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
+  const box =
+    'rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 text-center text-2xl outline-none focus:border-teal-700'
+  const complete = day !== '' && month !== '' && year.length === 4
+
+  return (
+    <div>
+      <div className="flex items-end gap-3">
+        <label className="block">
+          <span className="mb-1 block text-slate-500">Jour</span>
+          <input
+            autoFocus
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="JJ"
+            className={`${box} w-24`}
+            value={day}
+            onChange={(e) => {
+              const v = digits(e.target.value, 2)
+              update(v, month, year)
+              if (v.length === 2) monthRef.current?.focus()
+            }}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-slate-500">Mois</span>
+          <input
+            ref={monthRef}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="MM"
+            className={`${box} w-24`}
+            value={month}
+            onChange={(e) => {
+              const v = digits(e.target.value, 2)
+              update(day, v, year)
+              if (v.length === 2) yearRef.current?.focus()
+            }}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-slate-500">Année</span>
+          <input
+            ref={yearRef}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="AAAA"
+            className={`${box} w-36`}
+            value={year}
+            onChange={(e) => update(day, month, digits(e.target.value, 4))}
+            onKeyDown={(e) => e.key === 'Enter' && onEnter()}
+          />
+        </label>
+      </div>
+      {complete && !value && <p className="mt-3 text-lg text-red-700">Cette date n’existe pas ou est dans le futur.</p>}
+    </div>
+  )
 }

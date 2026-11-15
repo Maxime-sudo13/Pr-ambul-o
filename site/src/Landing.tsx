@@ -8,6 +8,10 @@ const h2 = 'mt-3 text-3xl font-bold tracking-tight sm:text-4xl'
 const wrap = 'mx-auto max-w-5xl px-5'
 const input = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-teal-700'
 
+// Une coordonnée laissée vide dans brand.json n'est tout simplement pas affichée.
+const EMAIL = BRAND.email.trim()
+const PHONE = BRAND.phone.trim()
+
 const nav = [
   ['video', 'Vidéo'],
   ['fonctionnement', 'Fonctionnement'],
@@ -249,6 +253,9 @@ export default function Landing() {
               <li>✓ Vos questions configurées avec vous à l’installation</li>
               <li>✓ Synthèse à copier, imprimer ou exporter</li>
             </ul>
+            <p className="mt-5 text-sm text-teal-100">
+              Tarif de lancement prévu. Le service ouvre d’abord à quelques cabinets pilotes.
+            </p>
           </div>
           <div className="rounded-2xl bg-white/10 p-6">
             <h3 className="text-xl font-semibold">Cabinets pilotes</h3>
@@ -266,7 +273,7 @@ export default function Landing() {
 
       <section id="questions" className={`${wrap} scroll-mt-16 py-16`}>
         <p className={eyebrow}>Questions fréquentes</p>
-        <h2 className={h2}>Ce qu’on nous demande le plus</h2>
+        <h2 className={h2}>Vos questions, nos réponses</h2>
         <div className="mt-8 divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {faq.map((f) => (
             <details key={f.q} className="group p-5">
@@ -286,25 +293,41 @@ export default function Landing() {
             <p className={eyebrow}>Contact</p>
             <h2 className={h2}>Une question, ou envie d’essayer dans votre cabinet ?</h2>
             <p className="mt-4 text-lg text-slate-600">
-              Écrivez ou appelez : je vous réponds personnellement et je peux vous apporter une tablette d’essai au
-              cabinet.
+              {PHONE ? 'Écrivez ou appelez' : 'Écrivez-moi'} : je vous réponds personnellement et je peux vous apporter
+              une tablette d’essai au cabinet.
             </p>
             <p className="mt-6 text-lg font-semibold">{BRAND.founder}</p>
             <p className="text-slate-600">
               {BRAND.role} de {BRAND.name}
             </p>
-            <p className="mt-3">
-              <a className="font-medium text-teal-800 underline" href={`mailto:${BRAND.email}`}>
-                {BRAND.email}
-              </a>
-            </p>
-            <p className="mt-1">
-              <a className="font-medium text-teal-800 underline" href={`tel:${BRAND.phone.replace(/\s/g, '')}`}>
-                {BRAND.phone}
-              </a>
-            </p>
+            {EMAIL && (
+              <p className="mt-3">
+                <a className="font-medium text-teal-800 underline" href={`mailto:${EMAIL}`}>
+                  {EMAIL}
+                </a>
+              </p>
+            )}
+            {PHONE && (
+              <p className="mt-1">
+                <a className="font-medium text-teal-800 underline" href={`tel:${PHONE.replace(/\s/g, '')}`}>
+                  {PHONE}
+                </a>
+              </p>
+            )}
           </div>
-          <ContactForm />
+          {EMAIL ? (
+            <ContactForm />
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="text-xl font-semibold">Les coordonnées arrivent</h3>
+              <p className="mt-2 text-slate-600">
+                L’adresse de contact sera publiée ici très bientôt. En attendant, la démonstration est ouverte à tous.
+              </p>
+              <a href={APP_URL} className={`${cta} mt-5`}>
+                Essayer la démo
+              </a>
+            </div>
+          )}
         </div>
       </section>
 
@@ -342,7 +365,7 @@ function ContactForm() {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     const body = [`Nom : ${name}`, `Profession : ${job}`, `Ville : ${city}`, '', message].join('\n')
-    window.location.href = `mailto:${BRAND.email}?subject=${encodeURIComponent(`Demande d’information ${BRAND.name}`)}&body=${encodeURIComponent(body)}`
+    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(`Demande d’information ${BRAND.name}`)}&body=${encodeURIComponent(body)}`
   }
 
   return (

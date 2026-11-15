@@ -38,8 +38,10 @@ const recto = svg(`
   <text x="${left}" y="${BLEED + 21}" ${FONT} font-size="2.45" fill="${GREY}">Pré-consultation sur tablette pour les professionnels de santé</text>
   <text x="${left}" y="${BLEED + 34}" ${FONT} font-size="4.2" font-weight="700" fill="${DARK}">${esc(brand.founder)}</text>
   <text x="${left}" y="${BLEED + 38.6}" ${FONT} font-size="2.8" fill="${GREY}">${esc(brand.role)}</text>
-  <text x="${left}" y="${BLEED + 45}" ${FONT} font-size="3" fill="${DARK}">${esc(brand.phone)}</text>
-  <text x="${left}" y="${BLEED + 49.4}" ${FONT} font-size="3" fill="${DARK}">${esc(brand.email)}</text>
+  ${[brand.phone, brand.email]
+    .filter((line) => line && line.trim())
+    .map((line, i) => `<text x="${left}" y="${BLEED + 45 + i * 4.4}" ${FONT} font-size="3" fill="${DARK}">${esc(line)}</text>`)
+    .join('\n  ')}
 `)
 
 // QR code dessiné en vectoriel, correction d'erreur moyenne.

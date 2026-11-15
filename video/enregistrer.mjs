@@ -1,5 +1,5 @@
 // Enregistre la vidéo de présentation en pilotant la vraie application.
-// Prérequis : l'application doit tourner (npm run dev:app). Lancer avec : npm run video
+// Lancer avec : npm run video (l'application est démarrée automatiquement si elle ne tourne pas déjà)
 // Résultat : video/presentation.mp4 (1920 × 1080) et video/apercu.png
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import puppeteer from 'puppeteer-core'
 import ffmpegPath from 'ffmpeg-static'
+import { createServer } from 'vite'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const brand = JSON.parse(readFileSync(join(here, '..', 'brand.json'), 'utf8'))
@@ -23,6 +24,15 @@ if (!chrome) throw new Error('Chrome ou Edge introuvable.')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const raw = join(here, 'brut.webm')
 const out = join(here, 'presentation.mp4')
+
+// Démarre l'application si elle ne tourne pas déjà.
+let server = null
+try {
+  await fetch(APP)
+} catch {
+  server = await createServer({ configFile: join(here, '..', 'vite.app.config.ts'), logLevel: 'silent' })
+  await server.listen()
+}
 
 const browser = await puppeteer.launch({
   executablePath: chrome,
@@ -76,11 +86,12 @@ try {
     await el.evaluate((e) => e.click())
     await sleep(after)
   }
-  const type = async (text) => {
+  const type = async (text, delay = 30) => {
     const el = (await frame.evaluateHandle(() => document.querySelector('main textarea, main input:not([type=checkbox])'))).asElement()
     await pointAt(el)
     await el.focus()
-    await el.type(text, { delay: 30 })
+    // Frappe au clavier : le texte suit le champ actif (utile pour la date, qui passe d'une case à l'autre).
+    await page.keyboard.type(text, { delay })
     await sleep(350)
   }
   const caption = (t) => page.evaluate((x) => stage.caption(x), t)
@@ -95,12 +106,12 @@ try {
   await waitText('Bienvenue')
 
   // ---------- Enregistrement ----------
-  const recorder = await page.screencast({ path: raw, format: 'webm', fps: 30, quality: 10, ffmpegPath })
-  await sleep(400)
+  await card(`<div class="logo">${await page.evaluate(() => stage.LOGO)}${brand.name}</div><p>${brand.tagline}</p>`)
+  await sleep(1200)
+  const recorder = await page.screencast({ path: raw, format: 'webm', fps: 30, quality: 8, ffmpegPath })
 
   // 1. Cartons d'ouverture
-  await card(`<div class="logo">${await page.evaluate(() => stage.LOGO)}${brand.name}</div><p>${brand.tagline}</p>`)
-  await sleep(3600)
+  await sleep(3400)
   await card(
     '<h1 class="words"><span>Motif.</span><span>Traitements.</span><br><span>Allergies.</span><span>Antécédents.</span></h1><p>Les mêmes questions, à chaque consultation.</p>',
   )
@@ -121,13 +132,7 @@ try {
   await tap('Continuer')
   await type('Sophie')
   await tap('Continuer')
-  const date = await frame.$('input[type=date]')
-  await pointAt(date)
-  await date.evaluate((e) => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(e, '1981-05-14')
-    e.dispatchEvent(new Event('input', { bubbles: true }))
-  })
-  await sleep(700)
+  await type('14051981', 110)
   await tap('Continuer')
   await tap('Une femme')
 
@@ -143,7 +148,9 @@ try {
   await tap('6', { after: 500 })
   await tap('Continuer')
   await tap('Non') // fièvre
+  const more = caption('Traitements, allergies, antécédents : rien n’est oublié.')
   await tap('Oui') // médicaments
+  await more
   await type('Ibuprofène 400 mg')
   await tap('Continuer')
   await tap('Oui') // allergies
@@ -157,10 +164,11 @@ try {
   await caption('Il relit ses réponses, puis il envoie.')
   await sleep(1400)
   await frame.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }))
-  await sleep(1800)
-  await tap('Envoyer', { after: 1200 })
-  await caption('Deux à trois minutes, sans aide.')
-  await sleep(2600)
+  await sleep(1900)
+  const sent = caption('Deux à trois minutes, sans aide.')
+  await tap('Envoyer', { after: 600 })
+  await sent
+  await sleep(3000)
 
   // 3. Le praticien, sur son ordinateur
   await caption('')
@@ -182,9 +190,10 @@ try {
   await sleep(2800)
   await frame.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
   await sleep(900)
-  await tap('Copier pour mon logiciel', { after: 600 })
-  await caption('Un clic pour la coller dans votre logiciel habituel.')
-  await sleep(3000)
+  const copied = caption('Un clic pour la coller dans votre logiciel habituel.')
+  await tap('Copier pour mon logiciel', { after: 400 })
+  await copied
+  await sleep(2600)
 
   // 4. Les questions du praticien
   await tap('Mes questions', { after: 900 })
@@ -199,8 +208,9 @@ try {
   await sleep(900)
   const label = (await frame.evaluateHandle(() => document.activeElement)).asElement()
   await pointAt(label)
-  await label.type('Avez-vous voyagé à l’étranger récemment ?', { delay: 38 })
-  await caption('Ajoutez, retirez, réordonnez. En quelques secondes.')
+  const added = caption('Ajoutez, retirez, réordonnez. En quelques secondes.')
+  await label.type('Avez-vous voyagé à l’étranger récemment ?', { delay: 36 })
+  await added
   const select = (await frame.evaluateHandle(() => document.querySelector('select'))).asElement()
   await pointAt(select)
   await page.evaluate(() => stage.tap())
@@ -221,6 +231,7 @@ try {
   await recorder.stop()
 } finally {
   await browser.close()
+  await server?.close()
 }
 
 // ---------- Encodage final ----------

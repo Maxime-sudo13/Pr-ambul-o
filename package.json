@@ -8,7 +8,8 @@
     "dev:app": "vite -c vite.app.config.ts",
     "build": "tsc --noEmit && vite build -c vite.site.config.ts && vite build -c vite.app.config.ts",
     "cartes": "node cartes/generer.mjs",
-    "video": "node video/enregistrer.mjs"
+    "video": "node video/enregistrer.mjs",
+    "test": "vitest run --root app"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -25,6 +26,7 @@
     "qrcode": "^1.5.4",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
-    "vite": "^8.3.8"
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

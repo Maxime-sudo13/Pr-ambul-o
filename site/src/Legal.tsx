@@ -2,8 +2,11 @@ import type { ReactNode } from 'react'
 import { BRAND } from './config'
 import { Mark } from './Landing'
 
-// Brouillons à faire relire par un juriste et à compléter (éléments entre crochets)
-// une fois la société créée et l'hébergeur du site choisi.
+// À faire relire par un juriste, et à compléter avec les informations de la société
+// (forme, SIREN, adresse) dès son immatriculation. L'hébergeur indiqué est celui
+// du site aujourd'hui : à mettre à jour si le site change d'hébergement.
+
+const contact = [BRAND.email, BRAND.phone].map((x) => x.trim()).filter(Boolean)
 
 function Page({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -31,22 +34,29 @@ export function Mentions() {
     <Page title="Mentions légales">
       <h2>Éditeur du site</h2>
       <p>
-        {BRAND.name} est édité par {BRAND.founder}, [forme juridique et numéro SIREN à compléter], [adresse à
-        compléter].
+        {BRAND.name} est un projet porté par {BRAND.founder}, qui en est le directeur de la publication.
       </p>
       <p>
-        Contact : {BRAND.email} · {BRAND.phone}
+        La société éditrice est en cours de création. Ses informations d’immatriculation seront publiées sur cette page
+        dès qu’elles existeront. Le service n’est pas encore commercialisé : ce site présente le projet et sa
+        démonstration.
       </p>
-      <p>Directeur de la publication : {BRAND.founder}.</p>
+      {contact.length > 0 && <p>Contact : {contact.join(' · ')}</p>}
       <h2>Hébergement</h2>
-      <p>[Nom, adresse et téléphone de l’hébergeur du site à compléter.]</p>
+      <p>
+        Ce site est hébergé par GitHub Pages, un service de GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco,
+        CA 94107, États-Unis.
+      </p>
       <h2>Nature du service</h2>
       <p>
         {BRAND.name} recueille et met en forme des informations déclarées par les patients. Ce n’est pas un dispositif
         médical : il ne pose aucun diagnostic, ne calcule aucun score et ne recommande aucun examen ni traitement.
       </p>
       <h2>Propriété intellectuelle</h2>
-      <p>Les textes, le logo et l’interface de ce site sont la propriété de leur éditeur. Toute reproduction demande son accord.</p>
+      <p>
+        Les textes, le logo, la vidéo et l’interface de ce site sont la propriété de leur éditeur. Toute reproduction
+        demande son accord.
+      </p>
     </Page>
   )
 }
@@ -56,19 +66,24 @@ export function Confidentialite() {
     <Page title="Confidentialité">
       <h2>Ce site</h2>
       <p>
-        Ce site ne dépose aucun cookie publicitaire ni outil de mesure d’audience. Le formulaire de contact n’enregistre
-        rien : il prépare un e-mail dans votre propre messagerie, que vous choisissez ou non d’envoyer.
+        Ce site ne dépose aucun cookie et n’utilise aucun outil de mesure d’audience ni de publicité. Comme tout
+        hébergeur, GitHub Pages enregistre des journaux techniques (dont l’adresse IP des visiteurs) pour assurer la
+        sécurité du service.
+      </p>
+      <p>
+        Le formulaire de contact n’enregistre rien : il prépare un e-mail dans votre propre messagerie, que vous
+        choisissez ou non d’envoyer.
       </p>
       <h2>La démonstration</h2>
       <p>
-        La démonstration fonctionne avec des patients fictifs. Ce que vous y saisissez reste dans votre navigateur et
+        La démonstration fonctionne avec des patients fictifs. Ce que vous y saisissez reste sur votre appareil et
         n’est transmis à aucun serveur. Vous pouvez tout effacer avec le bouton « Recommencer la démo ». N’y saisissez
         pas d’informations concernant de vrais patients.
       </p>
       <h2>Vos messages</h2>
       <p>
         Si vous nous écrivez, vos coordonnées servent uniquement à vous répondre. Elles ne sont ni revendues ni
-        partagées. Vous pouvez demander leur suppression à {BRAND.email}.
+        partagées, et vous pouvez demander leur suppression à tout moment.
       </p>
       <h2>Version destinée aux cabinets</h2>
       <p>
