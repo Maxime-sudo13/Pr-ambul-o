@@ -4,3 +4,7 @@ dist/
 .DS_Store
 # Documents commerciaux et liste de prospects : gardés hors du dépôt public
 commercial/
+# Sorties de l enregistrement vidéo (la version publiée est dans site/public)
+video/presentation.mp4
+video/apercu.png
+video/brut.webm

@@ -9,6 +9,7 @@ const wrap = 'mx-auto max-w-5xl px-5'
 const input = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-teal-700'
 
 const nav = [
+  ['video', 'Vidéo'],
   ['fonctionnement', 'Fonctionnement'],
   ['pour-qui', 'Pour qui'],
   ['tarif', 'Tarif'],
@@ -150,13 +151,28 @@ export default function Landing() {
             <a href={APP_URL} className={cta}>
               Essayer la démo
             </a>
-            <button className={ghost} onClick={() => goTo('contact')}>
-              Être recontacté
+            <button className={ghost} onClick={() => goTo('video')}>
+              ▶ Voir la vidéo
             </button>
           </div>
           <p className="mt-3 text-sm text-slate-500">Démo libre, sans inscription, avec des patients fictifs.</p>
         </div>
         <SynthesisPreview />
+      </section>
+
+      <section id="video" className={`${wrap} scroll-mt-16 pb-16`}>
+        <p className={eyebrow}>En vidéo</p>
+        <h2 className={h2}>Tout comprendre en deux minutes</h2>
+        <video
+          className="mt-8 aspect-video w-full rounded-2xl border border-slate-200 bg-slate-900 shadow-xl shadow-slate-200/70"
+          controls
+          playsInline
+          preload="none"
+          poster="./presentation.jpg"
+        >
+          <source src="./presentation.mp4" type="video/mp4" />
+        </video>
+        <p className="mt-3 text-sm text-slate-500">Vidéo sous-titrée, sans son. Patients fictifs.</p>
       </section>
 
       <section id="fonctionnement" className="scroll-mt-16 bg-slate-50 py-16">

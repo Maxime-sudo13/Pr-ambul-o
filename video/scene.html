@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Scène vidéo Préambuléo</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #0f172a;
+    background: radial-gradient(1200px 700px at 78% 8%, #d9f2ee 0%, transparent 60%), linear-gradient(160deg, #f8fafc 0%, #eef6f5 100%);
+  }
+
+  /* Marque discrète pendant les scènes de démonstration */
+  #brand { position: absolute; left: 56px; top: 40px; display: flex; align-items: center; gap: 14px; font-size: 30px; font-weight: 700; color: #115e59; opacity: 0; transition: opacity .6s; }
+  #brand svg { width: 42px; height: 42px; }
+  #role { position: absolute; right: 56px; top: 44px; font-size: 22px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #0f766e; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; padding: 8px 22px; opacity: 0; transition: opacity .5s; }
+
+  /* Appareil : tablette ou fenêtre d'ordinateur */
+  #device { position: absolute; left: 50%; top: 118px; transform: translateX(-50%) translateY(30px); opacity: 0; transition: opacity .7s ease, transform .7s ease; }
+  #device.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #shell { background: #0f172a; border-radius: 44px; padding: 24px; box-shadow: 0 40px 80px -30px rgba(15, 23, 42, .45), 0 0 0 2px #334155 inset; transition: all .6s ease; }
+  #bar { display: none; height: 46px; align-items: center; gap: 9px; padding: 0 18px; }
+  #bar i { width: 13px; height: 13px; border-radius: 50%; background: #475569; display: block; }
+  #bar span { margin-left: 18px; flex: 1; max-width: 520px; background: #1e293b; color: #cbd5e1; font-size: 17px; border-radius: 9px; padding: 6px 16px; }
+  #screen { overflow: hidden; border-radius: 22px; background: #f8fafc; }
+  #app { display: block; border: 0; transform-origin: 0 0; background: #f8fafc; }
+
+  #device.tablet #screen { width: 1150px; height: 742px; }
+  #device.tablet #app { width: 880px; height: 568px; transform: scale(1.3068); }
+
+  #device.desktop #shell { border-radius: 18px; padding: 0 0 6px; background: #0f172a; }
+  #device.desktop #bar { display: flex; }
+  #device.desktop #screen { width: 1500px; height: 760px; border-radius: 0 0 12px 12px; margin: 0 6px; }
+  #device.desktop #app { width: 1050px; height: 532px; transform: scale(1.4286); }
+
+  /* Légende */
+  #caption { position: absolute; left: 0; right: 0; bottom: 44px; text-align: center; font-size: 44px; font-weight: 600; letter-spacing: -.01em; padding: 0 160px; opacity: 0; transform: translateY(12px); transition: opacity .45s ease, transform .45s ease; }
+  #caption.on { opacity: 1; transform: translateY(0); }
+
+  /* Indicateur de toucher */
+  #cursor { position: absolute; left: 0; top: 0; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(15, 118, 110, .28); border: 3px solid #fff; box-shadow: 0 4px 14px rgba(15, 23, 42, .35); transform: translate(960px, 1200px); transition: transform .5s cubic-bezier(.3, .7, .2, 1), opacity .3s; opacity: 0; z-index: 5; pointer-events: none; }
+  #cursor.on { opacity: 1; }
+  #cursor::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 4px solid #0f766e; opacity: 0; }
+  #cursor.tap::after { animation: ripple .45s ease-out; }
+  @keyframes ripple { from { opacity: .9; transform: scale(.6); } to { opacity: 0; transform: scale(2.1); } }
+
+  /* Cartons de texte plein écran */
+  #card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 180px; opacity: 0; transition: opacity .7s ease; z-index: 10; pointer-events: none; background: radial-gradient(1100px 650px at 50% 20%, #dff3ef 0%, transparent 65%), #f8fafc; }
+  #card.on { opacity: 1; }
+  #card.dark { background: radial-gradient(1100px 650px at 50% 15%, #14857b 0%, transparent 70%), #115e59; color: #fff; }
+  #card h1 { margin: 0; font-size: 92px; line-height: 1.1; font-weight: 700; letter-spacing: -.025em; }
+  #card p { margin: 34px 0 0; font-size: 42px; line-height: 1.35; color: #475569; max-width: 1300px; }
+  #card.dark p { color: #ccfbf1; }
+  #card .logo { display: flex; align-items: center; gap: 26px; font-size: 110px; font-weight: 700; color: #115e59; letter-spacing: -.02em; }
+  #card.dark .logo { color: #fff; }
+  #card .logo svg { width: 128px; height: 128px; }
+  #card .url { margin-top: 46px; font-size: 46px; font-weight: 600; background: #fff; color: #115e59; border-radius: 999px; padding: 14px 44px; }
+  #card .words span { display: inline-block; margin: 0 14px; color: #0f766e; }
+  #card > * { transform: translateY(18px); transition: transform .8s ease; }
+  #card.on > * { transform: translateY(0); }
+</style>
+</head>
+<body>
+  <div id="brand">
+    <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0f766e"/><path d="M9 11h14M9 16h14M9 21h8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>
+    <span id="brandName"></span>
+  </div>
+  <div id="role"></div>
+
+  <div id="device" class="tablet">
+    <div id="shell">
+      <div id="bar"><i></i><i></i><i></i><span id="address"></span></div>
+      <div id="screen"><iframe id="app" allow="clipboard-write"></iframe></div>
+    </div>
+  </div>
+
+  <div id="caption"></div>
+  <div id="cursor"></div>
+  <div id="card"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const LOGO = '<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0f766e"/><path d="M9 11h14M9 16h14M9 21h8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>'
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+
+  window.stage = {
+    LOGO,
+    init(name, address) {
+      $('brandName').textContent = name
+      $('address').textContent = address
+    },
+    /** Affiche un carton plein écran (html) ou le retire (null). */
+    async card(html, dark = false) {
+      const c = $('card')
+      if (html === null) return c.classList.remove('on')
+      if (c.classList.contains('on')) {
+        c.classList.remove('on')
+        await wait(700)
+      }
+      c.innerHTML = html
+      c.classList.toggle('dark', dark)
+      void c.offsetWidth
+      c.classList.add('on')
+    },
+    async caption(text) {
+      const c = $('caption')
+      if (c.classList.contains('on')) {
+        c.classList.remove('on')
+        await wait(400)
+      }
+      if (!text) return
+      c.textContent = text
+      c.classList.add('on')
+    },
+    device(mode, role) {
+      const d = $('device')
+      d.classList.remove('tablet', 'desktop')
+      d.classList.add(mode, 'on')
+      $('brand').style.opacity = 1
+      $('role').textContent = role
+      $('role').style.opacity = 1
+    },
+    hideDevice() {
+      $('device').classList.remove('on')
+      $('role').style.opacity = 0
+      $('cursor').classList.remove('on')
+    },
+    /** x, y : coordonnées dans la page de l'application (à l'intérieur du cadre). */
+    cursorTo(x, y) {
+      const f = $('app')
+      const r = f.getBoundingClientRect()
+      const k = r.width / f.offsetWidth
+      const c = $('cursor')
+      c.classList.add('on')
+      c.style.transform = `translate(${r.left + x * k}px, ${r.top + y * k}px)`
+    },
+    tap() {
+      const c = $('cursor')
+      c.classList.remove('tap')
+      void c.offsetWidth
+      c.classList.add('tap')
+    },
+  }
+</script>
+</body>
+</html>
